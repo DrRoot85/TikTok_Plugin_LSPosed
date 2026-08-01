@@ -1,0 +1,45 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.tiktoksave'
+    compileSdk 36
+    buildToolsVersion '36.0.0'
+
+    defaultConfig {
+        applicationId "com.tiktoksave"
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packaging {
+        resources {
+            merges += "META-INF/xposed/*"
+            excludes += "**"
+        }
+    }
+}
+
+dependencies {
+    compileOnly "io.github.libxposed:api:102.0.0"
+    // service + interface AARs shipped locally with the minCompileSdk metadata
+    // stripped (they demand compileSdk 37, which is not published in the SDK repo).
+    implementation files('libs/libxposed-service-102.0.0-stripped.aar')
+    implementation files('libs/libxposed-interface-102.0.0-stripped.aar')
+    compileOnly "androidx.annotation:annotation:1.7.1"
+}

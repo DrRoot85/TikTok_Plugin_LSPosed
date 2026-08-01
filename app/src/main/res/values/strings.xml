@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TikTok Plugin</string>
+    <string name="app_desc">Save TikTok videos &amp; photos to local storage without watermark. No ads, no Telegram redirects, no tracking.</string>
+    <string name="settings_title">TikTok Plugin Settings</string>
+    <string name="pref_folder">Download folder name</string>
+    <string name="pref_folder_hint">Subfolder inside Downloads (e.g. TikTokSave)</string>
+    <string name="pref_no_watermark">No-watermark downloads</string>
+    <string name="pref_no_watermark_desc">Fetch clean version from TikTok CDN when available</string>
+    <string name="pref_save_images">Save photo-mode images</string>
+    <string name="pref_save_images_desc">Auto-download images from photo-mode posts</string>
+    <string name="pref_notify">Show download notifications</string>
+    <string name="pref_fab">Floating download button</string>
+    <string name="pref_fab_desc">Adds a draggable download button on screen</string>
+    <string name="pref_filename">Filename prefix</string>
+    <string name="pref_filename_hint">Prefix for saved files (default: TikTok)</string>
+    <string name="service_binding">Binding to LSPosed…</string>
+    <string name="service_unavailable">LSPosed manager not available. Module settings cannot be saved.</string>
+    <string name="service_bound">LSPosed bound. Settings active.</string>
+</resources>

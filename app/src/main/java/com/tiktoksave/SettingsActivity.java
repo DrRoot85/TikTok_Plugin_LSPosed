@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -22,11 +24,32 @@ import io.github.libxposed.service.XposedServiceHelper;
  * Settings UI of the module app itself.
  * Talks to LSPosed through libxposed:service and stores values in the same
  * remote preference group the hooked TikTok process reads.
+ *
+ * If the framework is unreachable (module not enabled / old LSPosed / LSPatch),
+ * the screen falls back to local preferences after a short timeout and shows
+ * actionable troubleshooting text instead of a dead-end error.
  */
 public class SettingsActivity extends Activity implements XposedServiceHelper.OnServiceListener {
 
+    private static final long BIND_TIMEOUT_MS = 4000;
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable timeoutCheck = new Runnable() {
+        @Override
+        public void run() {
+            if (bound) return;
+            // Framework unreachable: fall back to the module app's own prefs
+            // so the UI stays usable. Values apply once LSPosed binds.
+            prefs = getSharedPreferences(Settings.PREFS_GROUP, MODE_PRIVATE);
+            status.setText(R.string.service_timeout);
+            status.setTextColor(Color.rgb(230, 126, 34)); // orange
+            loadValues();
+        }
+    };
+
     private TextView status;
     private SharedPreferences prefs;
+    private boolean bound;
 
     private EditText folder;
     private EditText prefix;
@@ -93,7 +116,7 @@ public class SettingsActivity extends Activity implements XposedServiceHelper.On
 
         // -- Save button
         Button save = new Button(this);
-        save.setText("Save");
+        save.setText(R.string.save);
         LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         blp.topMargin = dp(20);
@@ -113,7 +136,7 @@ public class SettingsActivity extends Activity implements XposedServiceHelper.On
             e.putBoolean("notify", notify.isChecked());
             e.putBoolean("fab", fab.isChecked());
             e.apply();
-            Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.saved, Toast.LENGTH_SHORT).show();
         });
 
         setContentView(root);
@@ -134,6 +157,13 @@ public class SettingsActivity extends Activity implements XposedServiceHelper.On
         fab.setOnCheckedChangeListener(live);
 
         XposedServiceHelper.registerListener(this);
+        handler.postDelayed(timeoutCheck, BIND_TIMEOUT_MS);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacks(timeoutCheck);
     }
 
     private TextView label(int res) {
@@ -169,6 +199,8 @@ public class SettingsActivity extends Activity implements XposedServiceHelper.On
         try {
             SharedPreferences p = service.getRemotePreferences(Settings.PREFS_GROUP);
             if (p != null) {
+                bound = true;
+                handler.removeCallbacks(timeoutCheck);
                 prefs = p;
                 runOnUiThread(() -> {
                     status.setText(R.string.service_bound);
@@ -182,7 +214,6 @@ public class SettingsActivity extends Activity implements XposedServiceHelper.On
 
     @Override
     public void onServiceDied(@NonNull XposedService service) {
-        prefs = null;
         runOnUiThread(() -> {
             status.setText(R.string.service_unavailable);
             status.setTextColor(Color.RED);

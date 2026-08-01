@@ -17,4 +17,7 @@
     <string name="service_binding">Binding to LSPosed…</string>
     <string name="service_unavailable">LSPosed manager not available. Module settings cannot be saved.</string>
     <string name="service_bound">LSPosed bound. Settings active.</string>
+    <string name="service_timeout">LSPosed manager not available. Enable the module in LSPosed 1.9.2+ (not LSPatch), scope TikTok, then force-stop TikTok and this app and reopen. Using local settings for now.</string>
+    <string name="save">Save</string>
+    <string name="saved">Saved</string>
 </resources>

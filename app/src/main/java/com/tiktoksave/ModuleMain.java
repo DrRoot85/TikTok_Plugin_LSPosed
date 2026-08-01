@@ -9,15 +9,31 @@ import io.github.libxposed.api.XposedModule;
 /**
  * Module entry point (declared in META-INF/xposed/java_init.list).
  *
- * Uses the modern libxposed API (>= 101, LSPosed 1.9+ / 2.x).
- * Targets only the official TikTok app (com.zhiliaoapp.musically), main process.
+ * Uses the modern libxposed API (>= 102, LSPosed 1.9.2+ / 2.x).
+ * Targets official TikTok builds:
+ *   com.zhiliaoapp.musically  – TikTok (global & most regions)
+ *   com.ss.android.ugc.trill  – TikTok Lite
+ *
+ * Hook groups are installed independently in TiktokHooks.install, so a class
+ * missing in one build never blocks the rest.
  */
 public class ModuleMain extends XposedModule {
 
     public static final String TAG = "TikTokSave";
-    public static final String TIKTOK_PACKAGE = "com.zhiliaoapp.musically";
+
+    public static final String[] TIKTOK_PACKAGES = {
+            "com.zhiliaoapp.musically", // TikTok (global / most countries)
+            "com.ss.android.ugc.trill"  // TikTok Lite
+    };
 
     private String processName;
+
+    private static boolean isTiktok(String pkg) {
+        for (String p : TIKTOK_PACKAGES) {
+            if (p.equals(pkg)) return true;
+        }
+        return false;
+    }
 
     @Override
     public void onModuleLoaded(@NonNull ModuleLoadedParam param) {
@@ -26,11 +42,9 @@ public class ModuleMain extends XposedModule {
 
     @Override
     public void onPackageLoaded(@NonNull PackageLoadedParam param) {
-        if (!TIKTOK_PACKAGE.equals(param.getPackageName())) return;
-        if (processName != null && !processName.equals(TIKTOK_PACKAGE)) {
-            // Only the main UI process gets hooks/downloads.
-            return;
-        }
+        if (!isTiktok(param.getPackageName())) return;
+        // Only the main UI process gets hooks/downloads.
+        if (processName != null && !processName.equals(param.getPackageName())) return;
         try {
             Settings.init(getRemotePreferences(Settings.PREFS_GROUP));
         } catch (Throwable t) {
@@ -40,11 +54,11 @@ public class ModuleMain extends XposedModule {
 
     @Override
     public void onPackageReady(@NonNull PackageReadyParam param) {
-        if (!TIKTOK_PACKAGE.equals(param.getPackageName())) return;
-        if (processName != null && !processName.equals(TIKTOK_PACKAGE)) return;
+        if (!isTiktok(param.getPackageName())) return;
+        if (processName != null && !processName.equals(param.getPackageName())) return;
         try {
             TiktokHooks.install(this, param.getClassLoader());
-            log(Log.INFO, TAG, "hooks installed");
+            log(Log.INFO, TAG, "hooks installed in " + param.getPackageName());
         } catch (Throwable t) {
             log(Log.ERROR, TAG, "failed to install hooks", t);
         }

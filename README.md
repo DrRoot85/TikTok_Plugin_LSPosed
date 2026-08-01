@@ -1,6 +1,6 @@
 # TikTok Plugin
 
-A clean **LSPosed (Xposed) module** that adds local video/photo downloading to the **official TikTok app** (`com.zhiliaoapp.musically`).
+A clean **LSPosed (Xposed) module** that adds local video/photo downloading to the official TikTok app — global build (`com.zhiliaoapp.musically`) and TikTok Lite (`com.ss.android.ugc.trill`).
 
 Rebuilt from scratch against the modern [libxposed API 102](https://github.com/libxposed/api) — based on the feature set of the classic "TikTok Mod Cloud" plugin, but **without** any of its baggage.
 
@@ -31,22 +31,43 @@ Downloads go **straight from TikTok's own CDN to your phone**. No Telegram, no r
 
 ## Requirements
 
-- **LSPosed** 1.9+ (or another libxposed-API-102-compatible framework) with scope enabled for TikTok
-- Official TikTok app installed (`com.zhiliaoapp.musically`)
+- **LSPosed 1.9.2 or newer** (API 102 support; LSPosed 2.x / recent forks fine).
+  **LSPatch and other non-injected frameworks are NOT supported** — the settings
+  app needs the LSPosed service to bind.
+- Official TikTok app: `com.zhiliaoapp.musically` (global/most regions) or
+  `com.ss.android.ugc.trill` (TikTok Lite)
 - Android 8.0+ (API 26+)
 
 ## Install
 
 1. Build or grab the APK (see below)
-2. Install it, enable the module in LSPosed, select **TikTok** in scope
-3. Force-stop TikTok and reopen it
+2. Install it, open **LSPosed manager** → Modules → enable **TikTok Plugin**,
+   scope it to **TikTok** (and TikTok Lite if you use it)
+3. **Force-stop both TikTok and TikTok Plugin**, reopen TikTok
 4. A floating **⬓** button appears — tap to save the current video
+
+## Troubleshooting: "LSPosed manager not available"
+
+The settings screen shows this when the module app cannot bind to the LSPosed
+service. Check in this order:
+
+1. **LSPosed is actually active** — Magisk → Zygisk **on** + LSPosed module enabled.
+   Plain "LSPatch" or an old fork cannot run API-102 modules.
+2. **LSPosed version** — must be 1.9.2+ (API 102). Older 1.8.x builds cannot load
+   this module at all.
+3. **Module enabled + scoped** — LSPosed manager → Modules → TikTok Plugin →
+   enable, select TikTok in scope.
+4. **Force-stop both apps** — after any change, force-stop TikTok AND TikTok
+   Plugin, then reopen. The binding only happens on a fresh process.
+5. Still stuck? The settings screen falls back to local storage after 4 s; the
+   values apply once LSPosed binds. Check LSPosed's log (manager → Logs) for
+   `TikTokSave` entries.
 
 ## Build
 
 ```bash
 ./gradlew assembleDebug
-# output: apk/TikTok-Plugin-v1.0.0.apk (copy of app/build/outputs/apk/debug/app-debug.apk)
+# output: apk/TikTok-Plugin-v1.1.0.apk (copy of app/build/outputs/apk/debug/app-debug.apk)
 ```
 
 Requires JDK 17+, Android SDK (platform 36, build-tools 36.0.0).
@@ -60,7 +81,7 @@ Requires JDK 17+, Android SDK (platform 36, build-tools 36.0.0).
 
 ## How it works
 
-The module hooks a small set of TikTok model classes (verified against the public modded-TikTok dex, same codebase family as official releases):
+The module hooks a small set of TikTok model classes (verified against the public modded-TikTok dex, same codebase family as official releases). Each hook group is isolated, so a class missing in a specific build (e.g. TikTok Lite) only skips that group:
 
 - `Aweme.getVideo()` / `Video.*Addr()` getters → track the post currently on screen
 - `FeedItemList.getAwemeList()` → cache the feed for bulk downloads

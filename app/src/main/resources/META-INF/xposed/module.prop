@@ -1,9 +1,10 @@
 name=TikTok Plugin
-version=1.1.0
+version=1.2.0
 description=Save TikTok videos and photos to local storage. No watermark, no ads, no Telegram redirects.
 author=DrRoot85
 xposedmodule=true
-xposedminversion=101
-xposedminapi=102
-minSdk=26
+minApiVersion=101
+targetApiVersion=102
+staticScope=true
 autoHotReload=true
+minSdk=26

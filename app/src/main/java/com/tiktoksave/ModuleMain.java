@@ -15,7 +15,9 @@ import io.github.libxposed.api.XposedModule;
  *   com.ss.android.ugc.trill  – TikTok Lite
  *
  * Hook groups are installed independently in TiktokHooks.install, so a class
- * missing in one build never blocks the rest.
+ * missing in one build never blocks the rest. Every stage logs through the
+ * framework so LSPosed -> Logs shows module loading, process gating, and the
+ * per-hook result.
  */
 public class ModuleMain extends XposedModule {
 
@@ -38,13 +40,20 @@ public class ModuleMain extends XposedModule {
     @Override
     public void onModuleLoaded(@NonNull ModuleLoadedParam param) {
         processName = param.getProcessName();
+        log(Log.INFO, TAG, "module loaded in process: " + processName
+                + " | framework: " + getFrameworkName() + " " + getFrameworkVersion()
+                + " | api: " + getApiVersion());
     }
 
     @Override
     public void onPackageLoaded(@NonNull PackageLoadedParam param) {
         if (!isTiktok(param.getPackageName())) return;
-        // Only the main UI process gets hooks/downloads.
-        if (processName != null && !processName.equals(param.getPackageName())) return;
+        if (processName != null && !processName.equals(param.getPackageName())) {
+            log(Log.INFO, TAG, "skip sub-process '" + processName + "' (only main process is hooked)");
+            return;
+        }
+        log(Log.INFO, TAG, "package loaded: " + param.getPackageName()
+                + " | firstPackage=" + param.isFirstPackage());
         try {
             Settings.init(getRemotePreferences(Settings.PREFS_GROUP));
         } catch (Throwable t) {
@@ -57,8 +66,9 @@ public class ModuleMain extends XposedModule {
         if (!isTiktok(param.getPackageName())) return;
         if (processName != null && !processName.equals(param.getPackageName())) return;
         try {
-            TiktokHooks.install(this, param.getClassLoader());
-            log(Log.INFO, TAG, "hooks installed in " + param.getPackageName());
+            int n = TiktokHooks.install(this, param.getClassLoader());
+            log(Log.INFO, TAG, "hooks installed in " + param.getPackageName()
+                    + " (" + n + " hook registrations active)");
         } catch (Throwable t) {
             log(Log.ERROR, TAG, "failed to install hooks", t);
         }

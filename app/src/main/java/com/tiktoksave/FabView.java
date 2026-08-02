@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -12,6 +13,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import io.github.libxposed.api.XposedModule;
 
 /**
  * Draggable floating download button attached to the current activity.
@@ -24,11 +28,17 @@ public final class FabView extends TextView {
 
     private static FabView instance;
     private static ViewGroup currentHost;
+    private static XposedModule module;
+    private static boolean firstAttach = true;
 
     private float downX, downY;
     private int startMarginL, startMarginT;
     private boolean moved;
     private boolean longPressed;
+
+    public static void setModule(XposedModule m) {
+        module = m;
+    }
 
     public static void attach(android.app.Activity activity) {
         if (!Settings.fabEnabled()) return;
@@ -49,7 +59,20 @@ public final class FabView extends TextView {
             lp.setMargins(m, 0, m, bottom);
             host.addView(instance, lp);
             currentHost = host;
-        } catch (Throwable ignored) {
+            if (firstAttach) {
+                firstAttach = false;
+                Toast.makeText(activity, "TikTok Plugin active — tap \u2913 to save", Toast.LENGTH_SHORT).show();
+                Log.i(ModuleMain.TAG, "FAB attached in " + activity.getClass().getName());
+                if (module != null) {
+                    module.log(Log.INFO, ModuleMain.TAG,
+                            "FAB attached in " + activity.getClass().getName());
+                }
+            }
+        } catch (Throwable t) {
+            Log.w(ModuleMain.TAG, "FAB attach failed: " + t);
+            if (module != null) {
+                module.log(Log.WARN, ModuleMain.TAG, "FAB attach failed: " + t);
+            }
         }
     }
 

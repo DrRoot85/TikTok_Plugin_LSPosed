@@ -113,6 +113,24 @@ public final class TiktokHooks {
         try {
             Class<?> activity = Class.forName("android.app.Activity", false, cl);
             try {
+                Method onCreate = activity.getMethod("onCreate", android.os.Bundle.class);
+                module.deoptimize(onCreate);
+                module.hook(onCreate).intercept(chain -> {
+                    Object r = chain.proceed();
+                    Object self = chain.getThisObject();
+                    if (self instanceof android.app.Activity) {
+                        try {
+                            FabView.attach((android.app.Activity) self);
+                        } catch (Throwable ignored) {
+                        }
+                    }
+                    return r;
+                });
+                ok(module, "Activity.onCreate (FAB)");
+            } catch (Throwable t) {
+                fail(module, "Activity.onCreate", t);
+            }
+            try {
                 Method onPostResume = activity.getMethod("onPostResume");
                 module.deoptimize(onPostResume);
                 module.hook(onPostResume).intercept(chain -> {

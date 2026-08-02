@@ -43,9 +43,12 @@ public final class FabView extends TextView {
     public static void attach(android.app.Activity activity) {
         if (!Settings.fabEnabled()) return;
         try {
-            View content = activity.findViewById(android.R.id.content);
-            if (!(content instanceof ViewGroup)) return;
-            final ViewGroup host = (ViewGroup) content;
+            // Always attach to the window decor view: it is guaranteed to be a
+            // FrameLayout on every Android build. Attaching to android.R.id.content
+            // can throw a ClassCastException on activities whose content root is a
+            // different ViewGroup type (some TikTok screens), which silently killed
+            // the button before.
+            final ViewGroup host = (ViewGroup) activity.getWindow().getDecorView();
             if (instance != null) {
                 if (instance.getParent() == host) return; // already attached here
                 detach();
@@ -62,10 +65,12 @@ public final class FabView extends TextView {
             if (firstAttach) {
                 firstAttach = false;
                 Toast.makeText(activity, "TikTok Plugin active — tap \u2913 to save", Toast.LENGTH_SHORT).show();
-                Log.i(ModuleMain.TAG, "FAB attached in " + activity.getClass().getName());
+                Log.i(ModuleMain.TAG, "FAB attached in " + activity.getClass().getName()
+                        + " host=" + host.getClass().getName());
                 if (module != null) {
                     module.log(Log.INFO, ModuleMain.TAG,
-                            "FAB attached in " + activity.getClass().getName());
+                            "FAB attached in " + activity.getClass().getName()
+                                    + " host=" + host.getClass().getName());
                 }
             }
         } catch (Throwable t) {
